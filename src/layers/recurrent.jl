@@ -27,13 +27,15 @@ rnn.state # 60
 mutable struct Recur{T}
   cell::T
   init
+  last
   state
 end
 
-Recur(m, h = hidden(m)) = Recur(m, h, h)
+Recur(m, h = hidden(m)) = Recur(m, h, h, h)
 
 function (m::Recur)(xs...)
   h, y = m.cell(m.state, xs...)
+  m.last = m.state
   m.state = h
   return y
 end
@@ -68,6 +70,9 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to
     rnn.state = hidden(rnn.cell)
 """
 reset!(m) = prefor(x -> x isa Recur && (x.state = x.init), m)
+
+"one step rollback"
+rollback!(m) = prefor(x -> x isa Recur && (x.state = x.last), m)
 
 flip(f, xs) = reverse(f.(reverse(xs)))
 
